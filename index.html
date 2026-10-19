@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>N-Hub</title>
+<meta name="theme-color" content="#f5f6f8" id="tc">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="N-Hub">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+  html, body { margin: 0; height: 100%; background: #f5f6f8; overflow: hidden; }
+  iframe { display: block; border: 0; width: 100%; height: 100vh; height: 100dvh; }
+</style>
+<script>
+  // N-Hub opens inside this page so the phone's top bar can follow the app's light / dark mode.
+  var APP_URL = 'https://script.google.com/macros/s/AKfycbxm5uZenuKkPbjNIWuq_yIppneArYj3fK8udXVmDU7OvhTn-QuabHJQWdAsvPXaTwsybg/exec';
+  var COLORS = { dark: '#131418', light: '#f5f6f8' };
+  function paint(theme, bg) {
+    var c = bg || COLORS[theme] || COLORS.light;
+    document.getElementById('tc').setAttribute('content', c);
+    document.documentElement.style.background = c;
+    if (document.body) document.body.style.background = c;
+    document.documentElement.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
+  }
+  var saved = null;
+  try { saved = localStorage.getItem('nhubTheme'); } catch (e) {}
+  paint(saved || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (!d || typeof d !== 'object' || (d.nhubTheme !== 'dark' && d.nhubTheme !== 'light')) return;
+    var bg = /^#[0-9a-f]{6}$/i.test(d.bg || '') ? d.bg : null;
+    paint(d.nhubTheme, bg);
+    try { localStorage.setItem('nhubTheme', d.nhubTheme); } catch (err) {}
+  });
+</script>
+</head>
+<body>
+<iframe id="app" title="N-Hub" allow="camera; microphone; clipboard-read; clipboard-write; fullscreen"></iframe>
+<script>
+  document.getElementById('app').src = APP_URL;
+  paint(document.documentElement.style.colorScheme === 'dark' ? 'dark' : 'light', document.documentElement.style.background);
+</script>
+</body>
+</html>
