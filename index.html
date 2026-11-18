@@ -13,8 +13,10 @@
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #131418; }
   #top { position: fixed; left: 0; right: 0; top: 0; height: env(safe-area-inset-top, 0px); background: #131418; z-index: 2; }
-  #app { position: fixed; left: 0; right: 0; top: env(safe-area-inset-top, 0px); bottom: env(safe-area-inset-bottom, 0px);
-         width: 100%; height: calc(100% - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); border: 0; display: block; }
+  /* the app runs to the very bottom of the screen; it keeps its menu clear of the home bar itself (see nhubInset) */
+  #app { position: fixed; left: 0; right: 0; top: env(safe-area-inset-top, 0px); bottom: 0;
+         width: 100%; height: calc(100% - env(safe-area-inset-top, 0px)); border: 0; display: block; }
+  #probe { position: fixed; left: 0; bottom: 0; width: 1px; height: 0; padding-bottom: env(safe-area-inset-bottom, 0px); visibility: hidden; pointer-events: none; }
 </style>
 <script>
   // N-Hub opens inside this page so the phone's top bar can follow the app's light / dark mode.
@@ -43,10 +45,25 @@
 </head>
 <body>
 <div id="top"></div>
+<div id="probe"></div>
 <iframe id="app" title="N-Hub" allow="camera; microphone; clipboard-read; clipboard-write; fullscreen"></iframe>
 <script>
   paint(document.documentElement.getAttribute('data-theme') || start);
   document.getElementById('app').src = APP_URL;
+  // The app sits two frames deep (Apps Script) and cannot see the phone's home-bar area, so tell it how tall it is.
+  function sendInset() {
+    var px = Math.round(parseFloat(getComputedStyle(document.getElementById('probe')).paddingBottom) || 0);
+    var walk = function (w, depth) {
+      try { w.postMessage({ nhubInset: px }, '*'); } catch (e) {}
+      if (depth > 3) return;
+      try { for (var i = 0; i < w.frames.length; i++) walk(w.frames[i], depth + 1); } catch (e) {}
+    };
+    var f = document.getElementById('app').contentWindow; if (f) walk(f, 0);
+  }
+  var tries = 0, timer = setInterval(function () { sendInset(); if (++tries > 30) clearInterval(timer); }, 1000);
+  document.getElementById('app').addEventListener('load', function () { tries = 0; sendInset(); });
+  window.addEventListener('resize', sendInset); window.addEventListener('orientationchange', function () { setTimeout(sendInset, 300); });
+  window.addEventListener('message', function (e) { if (e.data && e.data.nhubAskInset) sendInset(); });
 </script>
 </body>
 </html>
