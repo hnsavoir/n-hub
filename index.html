@@ -63,7 +63,26 @@
   var tries = 0, timer = setInterval(function () { sendInset(); if (++tries > 30) clearInterval(timer); }, 1000);
   document.getElementById('app').addEventListener('load', function () { tries = 0; sendInset(); });
   window.addEventListener('resize', sendInset); window.addEventListener('orientationchange', function () { setTimeout(sendInset, 300); });
-  window.addEventListener('message', function (e) { if (e.data && e.data.nhubAskInset) sendInset(); });
+  // Size the frame in real pixels from the phone's own screen height (iOS home-screen apps can get 100% wrong),
+  // then, if the app reports it is shorter than this frame (Apps Script leaves a strip at the bottom), stretch by the gap.
+  var extra = 0;
+  function fit() {
+    var app = document.getElementById('app');
+    var top = document.getElementById('top').getBoundingClientRect().height || 0;
+    var h = Math.max(window.innerHeight, document.documentElement.clientHeight) - top;
+    app.style.bottom = 'auto'; app.style.height = (h + extra) + 'px';
+  }
+  fit();
+  window.addEventListener('resize', fit); window.addEventListener('orientationchange', function () { setTimeout(fit, 300); });
+  window.addEventListener('message', function (e) {
+    var d = e.data; if (!d || typeof d !== 'object' || !d.nhubAskInset) return;
+    sendInset();
+    if (typeof d.nhubH === 'number' && d.nhubH > 200) {
+      var cur = document.getElementById('app').getBoundingClientRect().height;
+      var gap = Math.round(cur - d.nhubH);   // strip Apps Script keeps below the app
+      if (gap > 3 && Math.abs(gap - extra) >= 2) { extra = Math.min(160, gap); fit(); }
+    }
+  });
 </script>
 </body>
 </html>
