@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="N-Hub">
-<!-- the app paints the strip behind the status bar itself (light text on it) -->
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- "black" (not translucent): with translucent, iOS home-screen apps get a page that stops one status-bar height short of the bottom, so the menu could never reach it -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #131418; }
   #top { position: fixed; left: 0; right: 0; top: 0; height: env(safe-area-inset-top, 0px); background: #131418; z-index: 2; }
@@ -53,7 +53,7 @@
   document.getElementById('app').src = APP_URL;
   // The app sits two frames deep (Apps Script) and cannot see the phone's home-bar area, so tell it how tall it is.
   function sendInset() {
-    var px = Math.round(parseFloat(getComputedStyle(document.getElementById('probe')).paddingBottom) || 0);
+    var px = insets().bot;
     var walk = function (w, depth) {
       try { w.postMessage({ nhubInset: px }, '*'); } catch (e) {}
       if (depth > 3) return;
@@ -69,15 +69,21 @@
   var extra = 0, lastH = 0;
   function dbg() { try { var a = document.getElementById('app').getBoundingClientRect(), vv = window.visualViewport;
     document.getElementById('dbg').textContent = 'iH ' + innerHeight + ' cH ' + document.documentElement.clientHeight + ' sH ' + screen.height + ' vv ' + (vv ? Math.round(vv.height) : '-') + ' st ' + (navigator.standalone ? 1 : 0) +
-      '\nframe ' + Math.round(a.top) + '+' + Math.round(a.height) + ' app ' + lastH + ' extra ' + extra + ' top ' + Math.round(document.getElementById('top').getBoundingClientRect().height) + ' bot ' + Math.round(parseFloat(getComputedStyle(document.getElementById('probe')).paddingBottom) || 0); } catch (e) {} }
+      '\nframe ' + Math.round(a.top) + '+' + Math.round(a.height) + ' app ' + lastH + ' extra ' + extra + ' top ' + Math.round(document.getElementById('top').getBoundingClientRect().height) + ' bot ' + insets().bot; } catch (e) {} }
   setInterval(dbg, 1000);
+  function insets() {
+    var top = document.getElementById('top').getBoundingClientRect().height || 0;
+    var bot = Math.round(parseFloat(getComputedStyle(document.getElementById('probe')).paddingBottom) || 0);
+    // translucent status bar on iOS: the page is one status-bar height short of the screen and never reaches the home bar
+    var short = top > 0 && window.screen && screen.height - window.innerHeight > 20;
+    return { top: top, bot: short ? 0 : bot };
+  }
   function fit() {
     var app = document.getElementById('app');
-    var top = document.getElementById('top').getBoundingClientRect().height || 0;
-    var h = Math.max(window.innerHeight, document.documentElement.clientHeight) - top;
-    app.style.bottom = 'auto'; app.style.height = (h + extra) + 'px';
+    var h = window.innerHeight - insets().top;
+    app.style.top = insets().top + 'px'; app.style.bottom = 'auto'; app.style.height = (h + extra) + 'px';
   }
-  fit();
+  fit(); [300, 1000, 2500].forEach(function (ms) { setTimeout(fit, ms); });
   window.addEventListener('resize', fit); window.addEventListener('orientationchange', function () { setTimeout(fit, 300); });
   window.addEventListener('message', function (e) {
     var d = e.data; if (!d || typeof d !== 'object' || !d.nhubAskInset) return;
