@@ -46,7 +46,6 @@
 <body>
 <div id="top"></div>
 <div id="probe"></div>
-<div id="dbg" style="position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 70px);z-index:9;font:11px/1.3 -apple-system,monospace;color:#ff6;background:rgba(0,0,0,.6);padding:2px 6px;pointer-events:none;white-space:pre"></div>
 <iframe id="app" title="N-Hub" allow="camera; microphone; clipboard-read; clipboard-write; fullscreen"></iframe>
 <script>
   paint(document.documentElement.getAttribute('data-theme') || start);
@@ -66,11 +65,7 @@
   window.addEventListener('resize', sendInset); window.addEventListener('orientationchange', function () { setTimeout(sendInset, 300); });
   // Size the frame in real pixels from the phone's own screen height (iOS home-screen apps can get 100% wrong),
   // then, if the app reports it is shorter than this frame (Apps Script leaves a strip at the bottom), stretch by the gap.
-  var extra = 0, lastH = 0;
-  function dbg() { try { var a = document.getElementById('app').getBoundingClientRect(), vv = window.visualViewport;
-    document.getElementById('dbg').textContent = 'iH ' + innerHeight + ' cH ' + document.documentElement.clientHeight + ' sH ' + screen.height + ' vv ' + (vv ? Math.round(vv.height) : '-') + ' st ' + (navigator.standalone ? 1 : 0) +
-      '\nframe ' + Math.round(a.top) + '+' + Math.round(a.height) + ' app ' + lastH + ' extra ' + extra + ' top ' + Math.round(document.getElementById('top').getBoundingClientRect().height) + ' bot ' + insets().bot; } catch (e) {} }
-  setInterval(dbg, 1000);
+  var extra = 0;
   function insets() {
     var top = document.getElementById('top').getBoundingClientRect().height || 0;
     var bot = Math.round(parseFloat(getComputedStyle(document.getElementById('probe')).paddingBottom) || 0);
@@ -88,7 +83,6 @@
   window.addEventListener('message', function (e) {
     var d = e.data; if (!d || typeof d !== 'object' || !d.nhubAskInset) return;
     sendInset();
-    if (typeof d.nhubH === 'number') lastH = d.nhubH;
     if (typeof d.nhubH === 'number' && d.nhubH > 200) {
       var cur = document.getElementById('app').getBoundingClientRect().height;
       var gap = Math.round(cur - d.nhubH);   // strip Apps Script keeps below the app
